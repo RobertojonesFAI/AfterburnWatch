@@ -1,0 +1,47 @@
+[project]
+name = "afterburn-watch"
+version = "0.2.0"
+description = "Satellite-driven feedback loop for post-fire debris-flow risk: identify actual debris flows from Sentinel-2 and Landsat, feed them back into the USGS likelihood model, and map the updated risk."
+readme = "README.md"
+requires-python = ">=3.11,<4"
+license = { text = "TBD" }
+authors = [
+    { name = "Roberto Jones" },
+    { name = "Troy Jenks" },
+    { name = "Ashraf Md" },
+]
+keywords = ["wildfire", "debris-flow", "burn-severity", "dNBR", "sentinel-2", "landsat", "feedback-loop", "usgs"]
+
+# Core: everything the loop, Model 1 and the tests need. Installs anywhere.
+dependencies = [
+    "numpy>=1.26",
+    "pandas>=2.1",
+    "scipy>=1.11",
+    "scikit-learn>=1.4",
+    "joblib>=1.3",
+]
+
+[project.optional-dependencies]
+# Real Sentinel-2 / Landsat access (ingest.py)
+imagery = ["pystac-client", "odc-stac", "planetary-computer", "rasterio"]
+# Streamlit demo app (app.py)
+app = ["streamlit", "folium", "streamlit-folium"]
+# USGS pfdf / wildcat for basin T, F, S -- NOT on PyPI, needs the extra index below
+pfdf = ["pfdf>=3.0.4,<4"]
+dev = ["pytest", "black", "ruff"]
+
+# pfdf ships from USGS's own GitLab package registry:
+#
+#   pip install -e ".[pfdf]" \
+#     --extra-index-url https://code.usgs.gov/api/v4/groups/859/-/packages/pypi/simple
+
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
