@@ -26,6 +26,7 @@ flowchart LR
 | **Model 1 -- DF Ident, Single Sat Param** | `identify.compute_feature_stack`, `identify.DebrisFlowIdentifier` | Spectral-change features from *one* sensor's before/after pair (NBR, NDVI, their change across the storm, SWIR brightening, burn dNBR), then a random forest trained on inventory outcomes. `cross_validate` holds out whole fires. |
 | **Cloud Masking** | `masking.scl_valid_mask`, `qa_pixel_valid_mask`, `aot_valid_mask`, `qa_aerosol_valid_mask`, `masked_median_composite` | Clouds and shadows from each sensor's QA band, optional smoke test from aerosol data, and a multi-scene composite so a pixel only has to be clear once. |
 | **? Landsat ?** | `sensors.LANDSAT_C2_L2`, `identify.fuse_sensors` | Landsat 8/9 C2 L2 (NIR = B5, SWIR2 = B7). One Model 1 per sensor, then fused. Agreement raises confidence; disagreement goes to human review. HLS (harmonized Landsat + Sentinel-2) is an open alternative. |
+| *(planned)* CCDC | Troy, in ArcGIS Online | Continuous Change Detection and Classification over the same windows. Its per-basin calls can join `fuse_sensors` as a third detector once its output format is agreed. |
 | **Second box (apply)** | `identify.detect` -> `summarize_by_basin` -> `basin_observations` | Per-pixel probability on channels only, rolled up per basin into a **positive** (debris flow seen) or a **negative** (basin clearly seen, nothing there). Basins too cloudy to judge get no observation. |
 | **New Observations** | `observations.merge_new_observations` | Adds them to the inventory, skipping duplicates of the same storm. |
 
@@ -43,6 +44,7 @@ flowchart LR
 
 `loop.run_iteration` runs one full turn:
 
+0. *(first pass on a real fire)* **Score the official USGS assessment**: `usgs_assessment.assessment_table` reads its `BP_Legend` likelihood classes, and `score_against_observations` marks each basin hit / miss / false alarm. For Wapiti this is the headline result: how did the published prediction do in the Aug 2025 storm?
 1. **Identify by Sat-DF**: fuses the Sentinel-2 and Landsat basin observations for the storm.
 2. **Actual DF Observations**: attaches basin T, F, S and merges into the inventory.
 3. **DF Prediction**: recalibrates the USGS M1 likelihood model from *trusted* observations and keeps the update only if it doesn't hurt predictions on held-out fires.
@@ -50,6 +52,10 @@ flowchart LR
 
 The state (inventory, coefficients, full history) persists between runs with
 `loop.save_state` / `load_state`.
+
+The official USGS layer has likelihood *classes* and no T, F, S, so it can
+be scored but not recalibrated. Recalibration needs our own pfdf run on
+Lemhi.
 
 ### Why the loop matters for Idaho
 
@@ -85,19 +91,23 @@ those observations get produced at all.
 
 | Framework box | Role in the loop |
 |---|---|
-| USFS Server -- RECOVER package | Authoritative dNBR, perimeter and soils (`recover.py`). They feed wildcat/pfdf and cross-check our own dNBR. |
+| USFS Server -- RECOVER package | Authoritative severity, perimeter, soils and DEM (`recover.py`: `catalog_zip` lists a 36 GB package without extracting it, and `extract_members` pulls only severity/DEM rasters). They feed wildcat/pfdf and cross-check our own dNBR. |
 | Lemhi HPC -- wildcat, pfdf | Delineate basins/segments and compute T, F, S per basin, the inputs to `predict.py`. The loop itself is light enough to run there too. |
-| ArcGIS Online -- hazard assessment package, ESRI Dashboard | Where the Map Risk GeoJSON goes. `app.py` (Streamlit) is the local and demo stand-in. |
+| ArcGIS Online -- hazard assessment package, ESRI Dashboard | Where the Map Risk GeoJSON goes, as a hosted layer in the Boise State organization (Troy). Troy also runs CCDC there. `app.py` (Streamlit) is the local and demo stand-in. |
 | Python library | This package, `afterburn_watch`. |
 
-## 4. What is real vs. not yet
+## 4. What is real vs. not yet (Sept 28)
 
 | Piece | Status |
 |---|---|
-| Band maps, indices, masks, M1 math, recalibration, loop, risk export | Implemented and unit tested (41 tests) |
+| Band maps, indices, masks, M1 math, recalibration, loop, risk export | Implemented and unit tested |
+| RECOVER catalog / selective extract, USGS assessment reader, storm windows | Implemented and unit tested (56 tests total) |
 | Whole loop end-to-end | Runs on **synthetic** data (`scripts/demo_synthetic_loop.py`) |
-| Sentinel-2 / Landsat download (`ingest.find_scenes`, `load_bands`) | Written, **not yet run** against the live catalogs |
+| Sentinel-2 / Landsat download (`ingest.find_scenes`, `load_bands`, `scripts/find_storm_scenes.py`) | Written, **not yet run** against the live catalogs |
+| Wapiti RECOVER package (36.1 GB) | **Not downloaded yet.** Goes straight to Lemhi, then `catalog_zip` |
+| Official USGS Wapiti assessment | **Not downloaded yet** (2024 data release) |
 | USGS inventory loading | Written. **Column mapping to confirm** against the real CSV + README |
 | Model 1 on real imagery | **Not trained yet.** Needs inventory sites x real scenes |
-| Basin T, F, S | From wildcat/pfdf runs on Lemhi, **not wired in yet** |
-| Per-basin storm rainfall | From MRMS (Debris Flow Hunters), **not wired in yet** |
+| Basin T, F, S | From pfdf/wildcat on Lemhi, **not wired in yet** |
+| Per-basin storm rainfall | MRMS or gauges, **source not settled** |
+| CCDC detector | Troy, in ArcGIS Online, **in progress** |

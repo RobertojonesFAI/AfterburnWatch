@@ -1,6 +1,6 @@
 [project]
 name = "afterburn-watch"
-version = "0.2.0"
+version = "0.3.0"
 description = "Satellite-driven feedback loop for post-fire debris-flow risk: identify actual debris flows from Sentinel-2 and Landsat, feed them back into the USGS likelihood model, and map the updated risk."
 readme = "README.md"
 requires-python = ">=3.11,<4"
@@ -26,6 +26,8 @@ dependencies = [
 imagery = ["pystac-client", "odc-stac", "planetary-computer", "rasterio"]
 # Streamlit demo app (app.py)
 app = ["streamlit", "folium", "streamlit-folium"]
+# Reading USGS assessment layers / fire perimeters (usgs_assessment.py, find_storm_scenes.py)
+gis = ["geopandas", "pyogrio", "shapely"]
 # USGS pfdf / wildcat for basin T, F, S -- NOT on PyPI, needs the extra index below
 pfdf = ["pfdf>=3.0.4,<4"]
 dev = ["pytest", "black", "ruff"]

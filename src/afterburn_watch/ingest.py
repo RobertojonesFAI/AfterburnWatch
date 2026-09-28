@@ -22,6 +22,7 @@ from datetime import date, timedelta
 from typing import Iterable, Sequence
 
 import numpy as np
+import pandas as pd
 
 from afterburn_watch.sensors import Sensor, get_sensor, scale_offset
 
@@ -58,6 +59,34 @@ def fire_windows(
     if storm_date is not None:
         post_event = (storm_date + timedelta(days=1), storm_date + timedelta(days=post_event_days))
     return Windows(pre=pre, post_fire=post_fire, post_event=post_event)
+
+
+def storm_windows(storm_date: date, before_days: int = 60, after_days: int = 45) -> tuple[tuple[date, date], tuple[date, date]]:
+    """(before, after) date windows around a storm, for debris-flow evidence.
+
+    "Before" = burned but pre-storm; "after" = post-storm, early enough that
+    fresh deposits haven't been cleaned up or revegetated. For Wapiti, the
+    storm is late August 2025 (SH-21 closed by mudslides, reported
+    Aug 27, 2025). Confirm the exact date from rainfall records.
+    """
+    before = (storm_date - timedelta(days=before_days), storm_date - timedelta(days=1))
+    after = (storm_date + timedelta(days=1), storm_date + timedelta(days=after_days))
+    return before, after
+
+
+def summarize_scenes(items) -> pd.DataFrame:
+    """One row per STAC item: id, date, platform, cloud cover (sorted by date)."""
+    rows = [
+        {
+            "id": it.id,
+            "datetime": it.datetime,
+            "platform": it.properties.get("platform"),
+            "cloud_cover": it.properties.get("eo:cloud_cover"),
+        }
+        for it in items
+    ]
+    df = pd.DataFrame(rows, columns=["id", "datetime", "platform", "cloud_cover"])
+    return df.sort_values("datetime", ignore_index=True)
 
 
 def search_params(
