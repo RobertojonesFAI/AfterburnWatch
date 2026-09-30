@@ -1,0 +1,20 @@
+# Afterburn Watch development environment.
+#
+# Build + run:   podman compose up -d --build
+# Attach in VS Code: "Attach to Running Container" -> afterburn-watch
+# Stop:          podman compose down
+services:
+  afterburn-watch:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: afterburn-watch-dev:latest
+    container_name: afterburn-watch
+    # Mount the live workspace over the baked-in copy so VS Code edits the
+    # real source; the editable install resolves against /app at runtime.
+    volumes:
+      - .:/app
+    environment:
+      - PYTHONUNBUFFERED=1
+    # Long-running process keeps the devcontainer open for VS Code.
+    command: ["sleep", "infinity"]
