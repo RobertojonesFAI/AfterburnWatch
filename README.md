@@ -155,7 +155,7 @@ second detector alongside the two sensors. Details in
 
 | Name | Role |
 |---|---|
-| Troy Jenks | PhD student, Computer Science (AI emphasis), Boise State. Technical build lead; debris-flow "actuals" data and imagery access. |
+| Troy Jenks | PhD student, Computing (AI emphasis), Boise State. Technical build lead; debris-flow "actuals" data and imagery access. |
 | Roberto Jones | Undergraduate, Computer Science, Boise State. Data integration; connecting satellite imagery into the pipeline. |
 | Md Ashrafuzzaman (Ashraf) | MS student, Civil and Environmental Engineering, Idaho State. Feasibility and agency-integration strategy; white paper and presentation lead. |
 
